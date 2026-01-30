@@ -1,0 +1,46 @@
+# --- Flutter / Dart ---
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+**/doc/api/
+**/ios/Flutter/.last_build_id
+/coverage/
+app.*.symbols
+app.*.map.json
+
+# --- Android / iOS specific ---
+/android/app/debug
+/android/app/profile
+/android/app/release
+*.itmsp/
+*.xcworkspace/
+
+# --- Python / FastAPI (Server) ---
+server/__pycache__/
+server/.venv/
+server/venv/
+server/.env
+server/*.py[cod]
+server/*.log
+server/.pytest_cache/
+
+# --- Databases ---
+*.db
+*.sqlite3
+server/sql_app.db
+
+# --- Docker ---
+.docker/
+
+# --- IDE & OS ---
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.DS_Store
+.history
