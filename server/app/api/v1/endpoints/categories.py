@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from app.api.v1.endpoints.auth import get_current_user
 from app.crud.crud_category import category as crud_category
 from app.schemas.category import CategoryCreate, CategoryOut, CategoryUpdate
@@ -12,9 +12,19 @@ async def create_category(obj_in: CategoryCreate, current_user=Depends(get_curre
     return await crud_category.create(user_id=user_id, obj_in=obj_in)
 
 @router.get("/", response_model=List[CategoryOut])
-async def read_categories(current_user=Depends(get_current_user)):
+async def read_categories(
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=100, ge=1, le=500),
+    include_deleted: bool = Query(default=False),
+    current_user=Depends(get_current_user),
+):
     user_id = str(current_user["_id"])
-    return await crud_category.get_multi(user_id=user_id)
+    return await crud_category.get_multi(
+        user_id=user_id,
+        skip=skip,
+        limit=limit,
+        include_deleted=include_deleted,
+    )
 
 @router.patch("/{id}", response_model=CategoryOut)
 async def update_category(id: str, obj_in: CategoryUpdate, current_user=Depends(get_current_user)):

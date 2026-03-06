@@ -1,4 +1,5 @@
-from pydantic import BaseModel, Field
+from datetime import datetime
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
 
 class CategoryBase(BaseModel):
@@ -7,16 +8,22 @@ class CategoryBase(BaseModel):
     icon: str = Field(default="folder")
 
 class CategoryCreate(CategoryBase):
-    pass 
+    id: Optional[str] = Field(default=None, min_length=1)
 
 class CategoryUpdate(BaseModel):
-    name: Optional[str] = None
-    color_hex: Optional[str] = None
+    model_config = ConfigDict(extra="forbid")
+
+    name: Optional[str] = Field(default=None, min_length=1, max_length=50)
+    color_hex: Optional[str] = Field(
+        default=None,
+        pattern="^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$",
+    )
     icon: Optional[str] = None
 
 class CategoryOut(CategoryBase):
     id: str
+    user_id: Optional[str] = None
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    is_deleted: bool = False
 
-    class Config:
-        from_attributes = True
-        populate_by_name = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)

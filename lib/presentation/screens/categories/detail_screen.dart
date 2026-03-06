@@ -31,7 +31,7 @@ class _CategoryDetailScreenState extends ConsumerState<CategoryDetailScreen> {
       id: const Uuid().v4(),
       title: title,
       userId: userId ?? 'me',
-      updatedAt: DateTime.now(),
+      updatedAt: DateTime.now().toUtc(),
       categoryId: widget.category.id,
       isCompleted: false,
       isDeleted: false,
@@ -40,6 +40,12 @@ class _CategoryDetailScreenState extends ConsumerState<CategoryDetailScreen> {
     ref.read(eventProvider.notifier).addEvent(newEvent);
     _taskController.clear();
     FocusScope.of(context).unfocus();
+  }
+
+  @override
+  void dispose() {
+    _taskController.dispose();
+    super.dispose();
   }
 
   @override
@@ -111,7 +117,7 @@ class _CategoryDetailScreenState extends ConsumerState<CategoryDetailScreen> {
                       Text(
                         "Category",
                         style: TextStyle(
-                          color: widget.category.flutterColor.withOpacity(0.7),
+                          color: widget.category.flutterColor.withValues(alpha: 0.7),
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
                         ),
@@ -133,10 +139,10 @@ class _CategoryDetailScreenState extends ConsumerState<CategoryDetailScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: widget.category.flutterColor.withOpacity(0.15),
+                      color: widget.category.flutterColor.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: widget.category.flutterColor.withOpacity(0.3),
+                        color: widget.category.flutterColor.withValues(alpha: 0.3),
                       ),
                     ),
                     child: Icon(
@@ -183,7 +189,7 @@ class _CategoryDetailScreenState extends ConsumerState<CategoryDetailScreen> {
         selected: isSelected,
         onSelected: (_) => setState(() => _filterIndex = index),
         backgroundColor: AppColors.surface,
-        selectedColor: widget.category.flutterColor.withOpacity(0.8),
+        selectedColor: widget.category.flutterColor.withValues(alpha: 0.8),
         showCheckmark: false,
         labelStyle: TextStyle(
           color: isSelected ? Colors.white : AppColors.textSecondary,
@@ -209,7 +215,7 @@ class _CategoryDetailScreenState extends ConsumerState<CategoryDetailScreen> {
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: isDone
-                    ? widget.category.flutterColor.withOpacity(0.3)
+                    ? widget.category.flutterColor.withValues(alpha: 0.3)
                     : AppColors.surfaceLight,
               ),
             ),

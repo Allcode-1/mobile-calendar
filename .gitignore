@@ -1,46 +1,67 @@
+# --- System / Editor ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.history/
+*.swp
+*.tmp
+*.log
+
+# --- Environment files ---
+.env
+.env.*
+server/.env
+!/.env.example
+!/server/.env.example
+
 # --- Flutter / Dart ---
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
 .packages
-.pub-cache/
 .pub/
+.pub-cache/
 build/
-**/doc/api/
-**/ios/Flutter/.last_build_id
-/coverage/
+coverage/
 app.*.symbols
 app.*.map.json
-
-# --- Android / iOS specific ---
+**/doc/api/
+**/ios/Flutter/.last_build_id
+android/local.properties
+android/key.properties
 /android/app/debug
 /android/app/profile
 /android/app/release
 *.itmsp/
 *.xcworkspace/
 
-# --- Python / FastAPI (Server) ---
-server/__pycache__/
-server/.venv/
+# --- Python / FastAPI ---
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.coverage
+htmlcov/
+venv/
+.venv/
 server/venv/
-server/.env
-server/*.py[cod]
-server/*.log
-server/.pytest_cache/
+server/.venv/
 
-# --- Databases ---
+# --- Databases / Local state ---
 *.db
+*.sqlite
 *.sqlite3
 server/sql_app.db
 
 # --- Docker ---
 .docker/
-
-# --- IDE & OS ---
-.idea/
-.vscode/
-*.iml
-*.ipr
-*.iws
-.DS_Store
-.history
+**/.docker/

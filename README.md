@@ -1,70 +1,82 @@
-# Mobile Calendar (Offline-First Architecture)
+# Mobile Calendar
 
-A cross-platform event management system featuring an **Offline-First** architecture and cloud synchronization. This project is a college MVP+ designed to demonstrate data persistence patterns and synchronization between a Flutter frontend and a FastAPI/MongoDB backend.
+Offline-first calendar app with Flutter client and FastAPI + MongoDB backend.
 
-### Key Features:
-* **Offline-First Architecture**: Designed with local persistence in mind to ensure functionality without an active internet connection.
-* **Cloud Synchronization**: Bidirectional sync logic using `updated_at` and `is_deleted` (soft-delete) flags to maintain data consistency.
-* **Cross-Platform**: Primarily developed and tested in **Flutter Web** for rapid iteration, while maintaining a codebase compatible with mobile environments.
-* **User Authentication**: Secure JWT-based auth system for data ownership.
-* **Progress Tracking**: Basic gamification elements including completion-based progress bars and efficiency metrics.
-
----
+## Documentation
+- Architecture: [ARCHITECTURE.md](ARCHITECTURE.md)
+- Backend API docs (runtime): `http://localhost:8000/docs`
 
 ## Tech Stack
+- Frontend: Flutter, Riverpod, Dio, sqflite
+- Backend: FastAPI, Motor (MongoDB), Pydantic
+- Infra: Docker, Docker Compose, GitHub Actions CI
 
-### Frontend
-* **Framework:** [Flutter](https://flutter.dev/) (Web & Mobile)
-* **State Management:** [Riverpod](https://riverpod.dev/) (Reactive state management)
-* **Local Persistence:** Architecture prepared for SQLite integration (In-memory/Web-storage for MVP)
-* **Network:** [Dio](https://pub.dev/packages/dio) (REST API client)
+## Repository Structure
+```text
+lib/                      Flutter application
+server/                   FastAPI backend
+test/                     Flutter tests
+server/tests/             Backend tests
+docker-compose.yml        Local orchestration (backend + MongoDB)
+.github/workflows/ci.yml  CI pipeline
+```
 
+## Quick Start (Docker)
+1. Copy env template and set secrets.
+```bash
+cp .env.example .env
+```
+PowerShell alternative:
+```powershell
+Copy-Item .env.example .env
+```
+2. Set a strong `SECRET_KEY` in `.env` (minimum 32 chars).
+3. Start services.
+```bash
+docker compose up --build -d
+```
+4. Open API docs:
+`http://localhost:8000/docs`
+
+## Local Development
 ### Backend
-* **Framework:** [FastAPI](https://fastapi.tiangolo.com/) (Asynchronous Python API)
-* **Database:** [MongoDB](https://www.mongodb.com/) (Document-based storage with `motor` driver)
-* **Auth:** [Python-jose](https://python-jose.readthedocs.io/) (JWT) and [Passlib](https://passlib.readthedocs.io/) (Bcrypt)
-* **Containerization:** Docker & Docker Compose
-
----
-
-## Installation & Setup
-
-### 1. Clone the repository
 ```bash
-git clone [https://github.com/Allcode-1/mobile-calendar](https://github.com/Allcode-1/mobile-calendar)
-cd mobile-calendar
+cd server
+py -3 -m pip install -r requirements.txt
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-2. Backend Setup (Docker - Recommended)
-
-The easiest way to run the backend and database is via Docker Compose:
-
+### Flutter
 ```bash
-docker-compose up --build
-```
-
-The API will be available at http://localhost:8000. Swagger docs: http://localhost:8000/docs.
-
-3. Frontend Setup
-
-Make sure you have Flutter installed.
-
-```bash
-# Get dependencies
 flutter pub get
-
-# Run on Web (Primary Development & Testing environment)
-flutter run -d chrome
+flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:8000/api/v1
 ```
 
-Architecture Disclaimer & MVP Scope
+For Android emulator:
+```bash
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/api/v1
+```
 
-    Project Status: This is a college MVP+ project, not production-ready software.
+## Quality Gates
+### Backend
+```bash
+cd server
+py -3 -m pytest -q
+```
 
-    Data Persistence: Local SQLite integration is in the "bridge/preparation" stage; the current version focuses on state-to-cloud synchronization.
+### Flutter
+```bash
+flutter analyze
+flutter test
+```
 
-    Sync Strategy: Uses a Last Write Wins (LWW) strategy for conflict resolution via updated_at timestamps.
+## GitHub Push Checklist
+1. Ensure `.env` is not tracked.
+2. Run quality gates locally.
+3. Confirm `git status` only contains intended files.
+4. Push to `main`/`master` or open PR (CI will run automatically).
 
-    Database Choice: MongoDB was selected for the backend to handle flexible event schemas and rapid prototyping of the sync layer.
-
-    Security: Simplified JWT handling for demonstration purposes.
+## Notes
+- Compose requires `SECRET_KEY`; startup fails intentionally if it is missing.
+- Backend logs use `loguru`; Flutter logs use centralized `AppLogger`.
+- Offline-first sync is implemented for events and categories with user-scoped local data.

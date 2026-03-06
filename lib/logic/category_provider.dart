@@ -1,7 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../data/sources/api_client.dart';
+
+import '../core/utils/app_logger.dart';
 import '../data/models/category_model.dart';
-import 'event_provider.dart';
+import '../data/repositories/category_repository.dart';
+import 'auth_provider.dart';
 
 class CategoryState {
   final List<CategoryModel> categories;
@@ -16,31 +19,42 @@ class CategoryState {
 }
 
 class CategoryNotifier extends StateNotifier<CategoryState> {
-  final ApiClient _apiClient = ApiClient();
-
-  CategoryNotifier() : super(CategoryState()) {
+  CategoryNotifier(this._repository, this._ref) : super(CategoryState()) {
     loadCategories();
   }
+
+  final CategoryRepository _repository;
+  final Ref _ref;
+  String? get _currentUserId => _ref.read(authProvider).user?.id;
 
   Future<void> loadCategories() async {
     if (!mounted) return;
     state = CategoryState(categories: state.categories, isLoading: true);
-    try {
-      final response = await _apiClient.dio.get('/categories/');
-      if (!mounted) return;
 
-      if (response.statusCode == 200) {
-        final List data = response.data;
-        final categories = data.map((e) => CategoryModel.fromJson(e)).toList();
-        state = CategoryState(categories: categories, isLoading: false);
-      } else {
-        state = CategoryState(
-          categories: state.categories,
-          isLoading: false,
-          error: "Server error: ${response.statusCode}",
-        );
+    try {
+      final userId = _currentUserId;
+      if (userId == null || userId.isEmpty) {
+        state = CategoryState(categories: const [], isLoading: false);
+        return;
       }
-    } catch (e) {
+
+      if (!kIsWeb) {
+        final localCategories = await _repository.getLocalCategories(userId);
+        if (mounted && localCategories.isNotEmpty) {
+          state = CategoryState(categories: localCategories, isLoading: true);
+        }
+      }
+
+      final synced = await _repository.syncWithCloud(userId: userId);
+      if (!mounted) return;
+      state = CategoryState(categories: synced, isLoading: false);
+    } catch (e, st) {
+      AppLogger.warning(
+        'Failed when loading categories',
+        error: e,
+        stackTrace: st,
+        scope: 'category_provider',
+      );
       if (!mounted) return;
       state = CategoryState(
         categories: state.categories,
@@ -52,17 +66,25 @@ class CategoryNotifier extends StateNotifier<CategoryState> {
 
   Future<bool> createCategory(String name, String color, String icon) async {
     try {
-      final response = await _apiClient.dio.post(
-        '/categories/',
-        data: {'name': name, 'color_hex': color, 'icon': icon},
+      final userId = _currentUserId;
+      if (userId == null || userId.isEmpty) return false;
+      final success = await _repository.createCategory(
+        name: name,
+        colorHex: color,
+        icon: icon,
+        userId: userId,
       );
-      if ((response.statusCode == 200 || response.statusCode == 201) &&
-          mounted) {
+      if (success && mounted) {
         await loadCategories();
-        return true;
       }
-      return false;
-    } catch (e) {
+      return success;
+    } catch (e, st) {
+      AppLogger.warning(
+        'Error creating category',
+        error: e,
+        stackTrace: st,
+        scope: 'category_provider',
+      );
       return false;
     }
   }
@@ -74,37 +96,54 @@ class CategoryNotifier extends StateNotifier<CategoryState> {
     required String icon,
   }) async {
     try {
-      final response = await _apiClient.dio.patch(
-        '/categories/$id',
-        data: {'name': name, 'color_hex': colorHex, 'icon': icon},
+      final userId = _currentUserId;
+      if (userId == null || userId.isEmpty) return false;
+      final success = await _repository.updateCategory(
+        id: id,
+        name: name,
+        colorHex: colorHex,
+        icon: icon,
+        userId: userId,
       );
-      if (response.statusCode == 200 && mounted) {
+      if (success && mounted) {
         await loadCategories();
-        return true;
       }
-      return false;
-    } catch (e) {
-      print("Error updating category: $e");
+      return success;
+    } catch (e, st) {
+      AppLogger.warning(
+        'Error updating category',
+        error: e,
+        stackTrace: st,
+        scope: 'category_provider',
+      );
       return false;
     }
   }
 
   Future<void> deleteCategory(String id) async {
     try {
-      final response = await _apiClient.dio.delete('/categories/$id');
-      if ((response.statusCode == 200 || response.statusCode == 204) &&
-          mounted) {
+      final userId = _currentUserId;
+      if (userId == null || userId.isEmpty) return;
+      await _repository.deleteCategory(id: id, userId: userId);
+      if (mounted) {
         await loadCategories();
       }
-    } catch (e) {
-      print("Error deleting category: $e");
+    } catch (e, st) {
+      AppLogger.warning(
+        'Error deleting category',
+        error: e,
+        stackTrace: st,
+        scope: 'category_provider',
+      );
     }
   }
 }
 
+final categoryRepositoryProvider = Provider((ref) => CategoryRepository());
+
 final categoryProvider = StateNotifierProvider<CategoryNotifier, CategoryState>(
   (ref) {
-    ref.watch(eventProvider);
-    return CategoryNotifier();
+    ref.watch(authProvider.select((state) => state.user?.id));
+    return CategoryNotifier(ref.watch(categoryRepositoryProvider), ref);
   },
 );

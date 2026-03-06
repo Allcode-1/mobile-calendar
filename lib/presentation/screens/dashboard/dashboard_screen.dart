@@ -28,7 +28,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       id: const Uuid().v4(),
       title: title,
       userId: userId ?? 'me',
-      updatedAt: DateTime.now(),
+      updatedAt: DateTime.now().toUtc(),
       categoryId: _selectedCategoryId,
       isCompleted: false,
       isDeleted: false,
@@ -37,6 +37,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     ref.read(eventProvider.notifier).addEvent(newEvent);
     _taskController.clear();
     FocusScope.of(context).unfocus();
+  }
+
+  @override
+  void dispose() {
+    _taskController.dispose();
+    super.dispose();
   }
 
   @override
@@ -125,7 +131,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.3),
+                    color: AppColors.primary.withValues(alpha: 0.3),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -151,7 +157,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           Text(
                             "$completed of $total tasks done",
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.8),
+                              color: Colors.white.withValues(alpha: 0.8),
                               fontSize: 14,
                             ),
                           ),
@@ -229,7 +235,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         selected: isSelected,
         onSelected: (_) => setState(() => _selectedCategoryId = id),
         backgroundColor: AppColors.surface,
-        selectedColor: color?.withOpacity(0.8) ?? AppColors.primary,
+        selectedColor: color?.withValues(alpha: 0.8) ?? AppColors.primary,
         showCheckmark: false,
         labelStyle: TextStyle(
           color: isSelected ? Colors.white : AppColors.textSecondary,
@@ -274,7 +280,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: isDone
-                    ? AppColors.primary.withOpacity(0.3)
+                    ? AppColors.primary.withValues(alpha: 0.3)
                     : AppColors.surfaceLight,
               ),
             ),

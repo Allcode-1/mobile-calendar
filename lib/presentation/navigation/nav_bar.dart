@@ -40,7 +40,7 @@ class _MainNavBarState extends State<MainNavBar> {
       child: Container(
         height: 85,
         padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(color: AppColors.background),
+        decoration: const BoxDecoration(color: AppColors.background),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
@@ -87,7 +87,7 @@ class _MainNavBarState extends State<MainNavBar> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: isSelected
-                ? AppColors.primary.withOpacity(0.15)
+                ? AppColors.primary.withValues(alpha: 0.15)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(20),
           ),
@@ -98,7 +98,7 @@ class _MainNavBarState extends State<MainNavBar> {
                 isSelected ? activeIcon : icon,
                 color: isSelected
                     ? AppColors.primary
-                    : AppColors.textSecondary.withOpacity(0.6),
+                    : AppColors.textSecondary.withValues(alpha: 0.6),
                 size: 24,
               ),
               if (isSelected)

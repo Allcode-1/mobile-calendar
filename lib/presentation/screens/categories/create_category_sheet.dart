@@ -137,7 +137,7 @@ class _CreateCategorySheetState extends ConsumerState<CreateCategorySheet> {
                     decoration: BoxDecoration(
                       color: color,
                       shape: BoxShape.circle,
-                      border: _selectedColor.value == color.value
+                      border: _selectedColor.toARGB32() == color.toARGB32()
                           ? Border.all(color: Colors.white, width: 3)
                           : null,
                     ),
@@ -159,8 +159,9 @@ class _CreateCategorySheetState extends ConsumerState<CreateCategorySheet> {
               ),
               onPressed: () async {
                 if (_nameController.text.isEmpty) return;
+                final colorArgb = _selectedColor.toARGB32();
                 final String colorHex =
-                    '#${_selectedColor.value.toRadixString(16).substring(2).toUpperCase()}';
+                    '#${(colorArgb & 0x00FFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
 
                 bool success;
                 if (isEdit) {
@@ -182,7 +183,10 @@ class _CreateCategorySheetState extends ConsumerState<CreateCategorySheet> {
                       );
                 }
 
-                if (success && mounted) Navigator.pop(context);
+                if (!context.mounted) return;
+                if (success) {
+                  Navigator.of(context).pop();
+                }
               },
               child: Text(
                 isEdit ? "Update" : "Create",

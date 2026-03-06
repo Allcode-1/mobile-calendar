@@ -20,16 +20,27 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay = DateTime.now();
 
+  DateTime _dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);
+
+  Map<DateTime, List<EventModel>> _groupEventsByDay(List<EventModel> events) {
+    final grouped = <DateTime, List<EventModel>>{};
+    for (final event in events) {
+      final start = event.startTime;
+      if (start == null) continue;
+      final key = _dateOnly(start);
+      grouped.putIfAbsent(key, () => <EventModel>[]).add(event);
+    }
+    return grouped;
+  }
+
   @override
   Widget build(BuildContext context) {
     final eventState = ref.watch(eventProvider);
     final authState = ref.watch(authProvider);
     final userName = authState.user?.fullName ?? "Explorer";
-
-    final dailyEvents = eventState.events.where((e) {
-      if (e.startTime == null) return false;
-      return isSameDay(e.startTime, _selectedDay);
-    }).toList();
+    final eventsByDay = _groupEventsByDay(eventState.events);
+    final selectedKey = _dateOnly(_selectedDay ?? DateTime.now());
+    final dailyEvents = List<EventModel>.from(eventsByDay[selectedKey] ?? const []);
 
     dailyEvents.sort(
       (a, b) => (a.startTime ?? DateTime.now()).compareTo(
@@ -45,7 +56,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           children: [
             _buildHeader(userName),
 
-            _buildCalendarCard(eventState.events),
+            _buildCalendarCard(eventsByDay),
 
             const SizedBox(height: 16),
             Padding(
@@ -53,7 +64,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               child: Text(
                 "Timeline",
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withValues(alpha: 0.9),
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -102,7 +113,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
   }
 
-  Widget _buildCalendarCard(List<EventModel> allEvents) {
+  Widget _buildCalendarCard(Map<DateTime, List<EventModel>> eventsByDay) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
@@ -118,7 +129,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         startingDayOfWeek: StartingDayOfWeek.monday,
         headerVisible: true,
         eventLoader: (day) {
-          return allEvents.where((e) => isSameDay(e.startTime, day)).toList();
+          return eventsByDay[_dateOnly(day)] ?? const [];
         },
         availableCalendarFormats: const {
           CalendarFormat.month: 'Month',
@@ -159,7 +170,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             shape: BoxShape.circle,
           ),
           todayDecoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.2),
+            color: AppColors.primary.withValues(alpha: 0.2),
             shape: BoxShape.circle,
           ),
           markerDecoration: const BoxDecoration(
@@ -186,20 +197,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       itemCount: events.length,
       itemBuilder: (context, index) {
-        return IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildLeftTimeline(events[index], index == events.length - 1),
-              Expanded(
-                child: GestureDetector(
-                  onDoubleTap: () =>
-                      _showTaskSheet(context, event: events[index]),
-                  child: _buildTimelineCard(events[index]),
-                ),
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildLeftTimeline(events[index], index == events.length - 1),
+            Expanded(
+              child: GestureDetector(
+                onDoubleTap: () => _showTaskSheet(context, event: events[index]),
+                child: _buildTimelineCard(events[index]),
               ),
-            ],
-          ),
+            ),
+          ],
         );
       },
     );
@@ -222,7 +230,8 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Expanded(
+          SizedBox(
+            height: 70,
             child: Container(
               width: 2,
               color: isLast ? Colors.transparent : AppColors.surfaceLight,
@@ -249,7 +258,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [

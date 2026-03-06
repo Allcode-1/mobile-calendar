@@ -213,7 +213,7 @@ class ProfileScreen extends ConsumerWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.surfaceLight.withOpacity(0.3)),
+        border: Border.all(color: AppColors.surfaceLight.withValues(alpha: 0.3)),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -263,7 +263,7 @@ class ProfileScreen extends ConsumerWidget {
         icon,
         color: color == Colors.white
             ? AppColors.textSecondary
-            : color.withOpacity(0.8),
+            : color.withValues(alpha: 0.8),
         size: 22,
       ),
       title: Text(

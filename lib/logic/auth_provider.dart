@@ -1,8 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../core/utils/app_logger.dart';
 import '../data/repositories/auth_repository.dart';
 import '../data/models/user_model.dart';
 import '../data/sources/api_client.dart';
+import '../data/sources/database_service.dart';
 
 class AuthState {
   final bool isLoading;
@@ -63,10 +66,21 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('access_token');
-    await _repository.logout();
-    state = AuthState(user: null, isLoading: false);
+    try {
+      final userId = state.user?.id;
+      if (!kIsWeb && userId != null && userId.isNotEmpty) {
+        await DatabaseService().clearUserData(userId);
+      }
+      await _repository.logout();
+      state = AuthState(user: null, isLoading: false);
+    } catch (e, st) {
+      AppLogger.warning(
+        'Logout failed',
+        error: e,
+        stackTrace: st,
+        scope: 'auth_provider',
+      );
+    }
   }
 }
 

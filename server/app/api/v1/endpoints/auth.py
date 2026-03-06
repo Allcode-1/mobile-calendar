@@ -1,4 +1,4 @@
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import jwt, JWTError
@@ -8,9 +8,12 @@ from app.db.mongodb import db_instance
 from app.schemas.user import UserCreate, UserOut
 from app.schemas.token import Token, TokenData
 from bson import ObjectId
+from bson.errors import InvalidId
+from uuid import uuid4
+from app.core.logging import logger
 
 router = APIRouter()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
@@ -26,7 +29,12 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     except JWTError:
         raise credentials_exception
         
-    user = await db_instance.db["users"].find_one({"_id": ObjectId(user_id)})
+    try:
+        user_object_id = ObjectId(user_id)
+    except InvalidId:
+        raise credentials_exception
+
+    user = await db_instance.db["users"].find_one({"_id": user_object_id})
     if user is None:
         raise credentials_exception
     
@@ -57,13 +65,23 @@ async def register(user_in: UserCreate):
     try:
         for cat in default_categories:
             cat["user_id"] = user_id_str
+            cat["id"] = str(uuid4())
+            cat["updated_at"] = datetime.now(timezone.utc)
+            cat["is_deleted"] = False
         
         # insert in categories
         await db_instance.db["categories"].insert_many(default_categories)
-        print(f"--- LOG: Created default categories for user {user_id_str} ---")
+        logger.bind(scope="auth").info(
+            "Created default categories for user_id={}",
+            user_id_str,
+        )
     except Exception as e:
         # dont stop registrating if error with categories
-        print(f"!!! Error seeding categories for {user_id_str}: {e}")
+        logger.bind(scope="auth").exception(
+            "Failed seeding categories for user_id={}: {}",
+            user_id_str,
+            e,
+        )
 
     return user_dict
 

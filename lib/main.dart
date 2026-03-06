@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:ui';
 
 import 'core/theme/app_theme.dart';
 import 'core/constants/app_constants.dart';
+import 'core/utils/app_logger.dart';
+import 'core/utils/provider_logger.dart';
 import 'logic/auth_provider.dart';
 
 import 'presentation/screens/auth/login_screen.dart';
@@ -13,6 +16,25 @@ void main() async {
   // flutter bind
   WidgetsFlutterBinding.ensureInitialized();
 
+  FlutterError.onError = (details) {
+    AppLogger.error(
+      'Unhandled Flutter framework error',
+      error: details.exception,
+      stackTrace: details.stack,
+      scope: 'flutter',
+    );
+  };
+
+  PlatformDispatcher.instance.onError = (error, stack) {
+    AppLogger.error(
+      'Unhandled platform error',
+      error: error,
+      stackTrace: stack,
+      scope: 'platform',
+    );
+    return true;
+  };
+
   // init local storage for jwt
   final sharedPreferences = await SharedPreferences.getInstance();
 
@@ -21,6 +43,7 @@ void main() async {
 
   runApp(
     ProviderScope(
+      observers: [AppProviderLogger()],
       overrides: [
         // share provider SharedPreferences in Riverpod
         sharedPrefsProvider.overrideWithValue(sharedPreferences),

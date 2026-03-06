@@ -1,11 +1,43 @@
-version: '3.8'
-
 services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   backend:
-    build: ./server
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
     ports:
       - "8000:8000"
-    volumes:
-      - ./server:/app
     environment:
-      - DATABASE_URL=sqlite:///./sql_app.db
+      MONGODB_URL: ${MONGODB_URL:-mongodb://mongo:27017}
+      DATABASE_NAME: ${DATABASE_NAME:-calendar_db}
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY must be set}
+      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:3000,http://localhost:5173,http://localhost:8080}
+      RATE_LIMIT_REQUESTS: ${RATE_LIMIT_REQUESTS:-10}
+      RATE_LIMIT_WINDOW_SECONDS: ${RATE_LIMIT_WINDOW_SECONDS:-60}
+      RATE_LIMIT_PATHS: ${RATE_LIMIT_PATHS:-/api/v1/auth/login,/api/v1/auth/register,/api/v1/events/sync,/api/v1/events/*,/api/v1/categories/*}
+      RATE_LIMIT_METHODS: ${RATE_LIMIT_METHODS:-POST,PATCH,DELETE}
+      TRUST_PROXY_HEADERS: ${TRUST_PROXY_HEADERS:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/').read()"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  mongo_data:

@@ -157,7 +157,7 @@ class _CategoryScreenState extends ConsumerState<CategoryScreen> {
             child: Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -198,7 +198,7 @@ class _CategoryScreenState extends ConsumerState<CategoryScreen> {
       context: context,
       barrierDismissible: true,
       barrierLabel: '',
-      barrierColor: Colors.black.withOpacity(0.8),
+      barrierColor: Colors.black.withValues(alpha: 0.8),
       transitionDuration: const Duration(milliseconds: 200),
       pageBuilder: (context, a1, a2) => const SizedBox(),
       transitionBuilder: (context, anim, a2, child) {
@@ -225,7 +225,7 @@ class _CategoryScreenState extends ConsumerState<CategoryScreen> {
                       _actionButton(
                         icon: Icons.edit_outlined,
                         color: Colors.white,
-                        bgColor: Colors.blue.withOpacity(0.4),
+                        bgColor: Colors.blue.withValues(alpha: 0.4),
                         onTap: () {
                           Navigator.pop(context);
                           _showCreateCategorySheet(context, category: category);
@@ -235,7 +235,7 @@ class _CategoryScreenState extends ConsumerState<CategoryScreen> {
                       _actionButton(
                         icon: Icons.delete_outline_rounded,
                         color: Colors.white,
-                        bgColor: Colors.red.withOpacity(0.4),
+                        bgColor: Colors.red.withValues(alpha: 0.4),
                         onTap: () async {
                           await ref
                               .read(categoryProvider.notifier)
@@ -273,7 +273,7 @@ class _CategoryScreenState extends ConsumerState<CategoryScreen> {
               color: bgColor,
               shape: BoxShape.circle,
               border: Border.all(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
                 width: 1.5,
               ),
             ),
@@ -290,7 +290,7 @@ class _CategoryScreenState extends ConsumerState<CategoryScreen> {
       child: Text(
         "$label: $count",
         style: TextStyle(
-          color: Colors.white.withOpacity(0.85),
+          color: Colors.white.withValues(alpha: 0.85),
           fontSize: 12,
           fontWeight: FontWeight.w500,
         ),

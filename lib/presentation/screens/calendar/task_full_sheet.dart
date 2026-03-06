@@ -48,13 +48,11 @@ class _TaskFullSheetState extends ConsumerState<TaskFullSheet> {
           );
     _selectedCategoryId = widget.event?.categoryId;
 
-    if (widget.event?.priority != null) {
-      final p = widget.event!.priority;
-      if (p is int) {
-        _priority = p == 1 ? 'low' : (p == 3 ? 'high' : 'medium');
-      } else {
-        _priority = p.toString();
-      }
+    final existingPriority = widget.event?.priority;
+    if (existingPriority != null) {
+      _priority = existingPriority == 1
+          ? 'low'
+          : (existingPriority == 3 ? 'high' : 'medium');
     }
     _remindMe = widget.event?.reminderMinutes != null;
   }
@@ -98,7 +96,7 @@ class _TaskFullSheetState extends ConsumerState<TaskFullSheet> {
       isCompleted: widget.event?.isCompleted ?? false,
       categoryId: _selectedCategoryId,
       userId: auth.user?.id ?? 'me',
-      updatedAt: DateTime.now(),
+      updatedAt: DateTime.now().toUtc(),
       priority: _priorityToInt(_priority),
       reminderMinutes: _remindMe ? 15 : null,
     );
@@ -109,6 +107,13 @@ class _TaskFullSheetState extends ConsumerState<TaskFullSheet> {
       ref.read(eventProvider.notifier).updateEventFull(eventData);
     }
     Navigator.pop(context);
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descController.dispose();
+    super.dispose();
   }
 
   @override
@@ -167,7 +172,8 @@ class _TaskFullSheetState extends ConsumerState<TaskFullSheet> {
                 style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
               ),
               value: _remindMe,
-              activeColor: AppColors.primary,
+              activeThumbColor: AppColors.primary,
+              activeTrackColor: AppColors.primary.withValues(alpha: 0.4),
               onChanged: (v) => setState(() => _remindMe = v),
             ),
             const SizedBox(height: 24),
@@ -244,36 +250,34 @@ class _TaskFullSheetState extends ConsumerState<TaskFullSheet> {
           },
         ),
         const SizedBox(height: 12),
-        IntrinsicHeight(
-          child: Row(
-            children: [
-              _buildTimeTile(
-                label: "Start",
-                value: _startTime!.format(context),
-                icon: Icons.access_time,
-                onTap: () async {
-                  final t = await showTimePicker(
-                    context: context,
-                    initialTime: _startTime!,
-                  );
-                  if (t != null) setState(() => _startTime = t);
-                },
-              ),
-              const SizedBox(width: 12),
-              _buildTimeTile(
-                label: "End",
-                value: _endTime!.format(context),
-                icon: Icons.access_time_filled,
-                onTap: () async {
-                  final t = await showTimePicker(
-                    context: context,
-                    initialTime: _endTime!,
-                  );
-                  if (t != null) setState(() => _endTime = t);
-                },
-              ),
-            ],
-          ),
+        Row(
+          children: [
+            _buildTimeTile(
+              label: "Start",
+              value: _startTime!.format(context),
+              icon: Icons.access_time,
+              onTap: () async {
+                final t = await showTimePicker(
+                  context: context,
+                  initialTime: _startTime!,
+                );
+                if (t != null) setState(() => _startTime = t);
+              },
+            ),
+            const SizedBox(width: 12),
+            _buildTimeTile(
+              label: "End",
+              value: _endTime!.format(context),
+              icon: Icons.access_time_filled,
+              onTap: () async {
+                final t = await showTimePicker(
+                  context: context,
+                  initialTime: _endTime!,
+                );
+                if (t != null) setState(() => _endTime = t);
+              },
+            ),
+          ],
         ),
       ],
     );

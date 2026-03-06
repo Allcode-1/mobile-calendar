@@ -12,12 +12,16 @@ class UserModel {
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
-    final profile = json['profile'] ?? {};
+    final dynamic rawProfile = json['profile'];
+    final profile = rawProfile is Map<String, dynamic>
+        ? rawProfile
+        : <String, dynamic>{};
+
     return UserModel(
-      id: json['id'],
-      email: json['email'],
-      fullName: profile['full_name'] ?? '',
-      avatarUrl: profile['avatar_url'],
+      id: json['id']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      fullName: profile['full_name']?.toString() ?? '',
+      avatarUrl: profile['avatar_url']?.toString(),
     );
   }
 }

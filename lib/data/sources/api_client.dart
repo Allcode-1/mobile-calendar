@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/foundation.dart';
 import '../../core/constants/api_constants.dart';
+import '../../core/utils/app_logger.dart';
 
 class ApiClient {
   // singleton pattern: one pattern for whole app
@@ -37,28 +37,31 @@ class ApiClient {
             options.headers['Authorization'] = 'Bearer $token';
           }
 
-          if (kDebugMode) {
-            print('🌐 [API REQ] ${options.method}: ${options.uri}');
-            if (options.data != null) print('📦 Body: ${options.data}');
+          AppLogger.debug(
+            '[REQ] ${options.method} ${options.uri}',
+            scope: 'api',
+          );
+          if (options.data != null) {
+            AppLogger.debug('[REQ BODY] ${options.data}', scope: 'api');
           }
 
           return handler.next(options);
         },
         onResponse: (response, handler) {
-          if (kDebugMode) {
-            print(
-              '✅ [API RES] ${response.statusCode}: ${response.requestOptions.path}',
-            );
-          }
+          AppLogger.debug(
+            '[RES] ${response.statusCode} ${response.requestOptions.path}',
+            scope: 'api',
+          );
           return handler.next(response);
         },
         onError: (DioException e, handler) async {
-          if (kDebugMode) {
-            print(
-              '❌ [API ERR] ${e.response?.statusCode}: ${e.requestOptions.path}',
-            );
-            print('💬 Data: ${e.response?.data}');
-          }
+          AppLogger.warning(
+            '[ERR] ${e.response?.statusCode} ${e.requestOptions.path}',
+            error: e,
+            stackTrace: e.stackTrace,
+            scope: 'api',
+          );
+          AppLogger.debug('[ERR DATA] ${e.response?.data}', scope: 'api');
 
           // if token expired (401) logout user
           if (e.response?.statusCode == 401) {
@@ -75,11 +78,21 @@ class ApiClient {
   // utilit for handle bag check
   String getReadableError(dynamic e) {
     if (e is DioException) {
-      if (e.type == DioExceptionType.connectionTimeout)
+      if (e.type == DioExceptionType.connectionTimeout) {
         return "Server not responding";
-      if (e.response?.data?['detail'] != null) {
-        final detail = e.response?.data['detail'];
-        return detail is String ? detail : detail[0]['msg'].toString();
+      }
+      final data = e.response?.data;
+      if (data is Map && data['detail'] != null) {
+        final detail = data['detail'];
+        if (detail is String) {
+          return detail;
+        }
+        if (detail is List && detail.isNotEmpty) {
+          final first = detail.first;
+          if (first is Map && first['msg'] != null) {
+            return first['msg'].toString();
+          }
+        }
       }
     }
     return "We got undefined error...";

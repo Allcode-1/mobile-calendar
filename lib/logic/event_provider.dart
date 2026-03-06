@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_calendar/logic/auth_provider.dart';
+import '../core/utils/app_logger.dart';
 import '../data/models/event_model.dart';
 import '../data/repositories/event_repository.dart';
 
@@ -18,22 +19,35 @@ class EventState {
 
 class EventNotifier extends StateNotifier<EventState> {
   final EventRepository _repository;
+  final Ref _ref;
 
-  EventNotifier(this._repository) : super(EventState()) {
+  EventNotifier(this._repository, this._ref) : super(EventState()) {
     refreshEvents();
   }
 
+  String? get _currentUserId => _ref.read(authProvider).user?.id;
+
   Future<void> refreshEvents() async {
-    print("Loading events (Web: $kIsWeb)...");
     state = EventState(events: state.events, isLoading: true);
+
     try {
-      final remoteEvents = await _repository.syncWithCloud();
-      if (kIsWeb) {
-        state = EventState(events: remoteEvents, isLoading: false);
-      } else {
-        final local = await _repository.getEvents();
-        state = EventState(events: local, isLoading: false);
+      final userId = _currentUserId;
+      if (userId == null || userId.isEmpty) {
+        state = EventState(events: const [], isLoading: false);
+        return;
       }
+
+      if (kIsWeb) {
+        final remoteEvents = await _repository.syncWithCloud(userId: userId);
+        state = EventState(events: remoteEvents, isLoading: false);
+        return;
+      }
+
+      final localEvents = await _repository.getEvents(userId: userId);
+      state = EventState(events: localEvents, isLoading: false);
+
+      final syncedEvents = await _repository.syncWithCloud(userId: userId);
+      state = EventState(events: syncedEvents, isLoading: false);
     } catch (e) {
       state = EventState(
         events: state.events,
@@ -45,7 +59,12 @@ class EventNotifier extends StateNotifier<EventState> {
 
   Future<void> addEvent(EventModel event) async {
     try {
-      await _repository.addEvent(event);
+      final userId = _currentUserId;
+      if (userId == null || userId.isEmpty) return;
+      await _repository.addEvent(
+        event.copyWith(userId: userId),
+        userId: userId,
+      );
       await refreshEvents();
     } catch (e) {
       state = EventState(events: state.events, error: e.toString());
@@ -54,40 +73,68 @@ class EventNotifier extends StateNotifier<EventState> {
 
   Future<void> deleteEvent(String id) async {
     try {
-      await _repository.deleteEvent(id);
+      final userId = _currentUserId;
+      if (userId == null || userId.isEmpty) return;
+      await _repository.deleteEvent(id, userId: userId);
       await refreshEvents();
     } catch (e) {
-      print("Error deleting event: $e");
+      AppLogger.warning(
+        'Error deleting event',
+        error: e,
+        scope: 'event_provider',
+      );
     }
   }
 
   Future<void> toggleComplete(EventModel event) async {
     try {
       final bool newStatus = !event.isCompleted;
-      await _repository.updateEvent(event.id, {'is_completed': newStatus});
+      final userId = _currentUserId;
+      if (userId == null || userId.isEmpty) return;
+      await _repository.updateEvent(event.id, {
+        'is_completed': newStatus,
+      }, userId: userId);
       await refreshEvents();
     } catch (e) {
-      print("Error toggling completion: $e");
+      AppLogger.warning(
+        'Error toggling completion',
+        error: e,
+        scope: 'event_provider',
+      );
     }
   }
 
   Future<void> updateEventTitle(String id, String newTitle) async {
     if (newTitle.trim().isEmpty) return;
     try {
-      await _repository.updateEvent(id, {'title': newTitle.trim()});
+      final userId = _currentUserId;
+      if (userId == null || userId.isEmpty) return;
+      await _repository.updateEvent(id, {
+        'title': newTitle.trim(),
+      }, userId: userId);
       await refreshEvents();
     } catch (e) {
-      print("Error updating title: $e");
+      AppLogger.warning(
+        'Error updating title',
+        error: e,
+        scope: 'event_provider',
+      );
     }
   }
 
   Future<void> updateEventFull(EventModel event) async {
     try {
-      await _repository.updateEvent(event.id, event.toJson());
+      final userId = _currentUserId;
+      if (userId == null || userId.isEmpty) return;
+      await _repository.updateEvent(event.id, event.toJson(), userId: userId);
 
       await refreshEvents();
     } catch (e) {
-      print("Error updating full event: $e");
+      AppLogger.warning(
+        'Error updating full event',
+        error: e,
+        scope: 'event_provider',
+      );
       state = EventState(events: state.events, error: e.toString());
     }
   }
@@ -97,5 +144,5 @@ final eventRepositoryProvider = Provider((ref) => EventRepository());
 
 final eventProvider = StateNotifierProvider<EventNotifier, EventState>((ref) {
   ref.watch(authProvider.select((s) => s.user?.id));
-  return EventNotifier(ref.watch(eventRepositoryProvider));
+  return EventNotifier(ref.watch(eventRepositoryProvider), ref);
 });
