@@ -2,6 +2,21 @@
 
 Offline-first calendar app with Flutter client and FastAPI + MongoDB backend.
 
+## Project Status
+This repository is an **MVP+ educational project**.
+
+It is **not production-ready** software at this stage.
+
+Current scope focuses on:
+- validating offline-first architecture ideas;
+- sync and conflict-resolution baseline;
+- core auth/events/categories flows.
+
+It does **not** yet guarantee:
+- full production-grade security hardening;
+- complete end-to-end regression coverage;
+- operational SLO/monitoring standards expected in mature production systems.
+
 ## Documentation
 - Architecture: [ARCHITECTURE.md](ARCHITECTURE.md)
 - Backend API docs (runtime): `http://localhost:8000/docs`
